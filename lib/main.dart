@@ -14,17 +14,37 @@ class MainApp extends StatelessWidget {
     const String androidWidgetName =
         'com.example.flutter_home_widget.MeuHomeWidget';
 
-    // Caminho da imagem que você quer mostrar no widget
-    String imagemCaminho =
-        'https://github.com/wellifabio/senai2026/blob/main/ds/turmas/2DES_A/4%C2%BA%20Semestre/03-ppdm2/aula07/icone.png?raw=true';
-
     try {
-      await HomeWidget.saveWidgetData<String>('chave_imagem', imagemCaminho);
+      final imagem = await rootBundle.load('assets/icone.png');
+      await HomeWidget.saveFile(
+        'chave_imagem',
+        imagem.buffer.asUint8List(),
+        extension: 'png',
+      );
       await HomeWidget.saveWidgetData<String>('chave_texto', 'Ideia');
 
       await HomeWidget.updateWidget(qualifiedAndroidName: androidWidgetName);
+      if (await HomeWidget.isRequestPinWidgetSupported() != true) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Seu launcher não permite adicionar widgets automaticamente. '
+              'Adicione o widget Ideia pelo menu de widgets da tela inicial.',
+            ),
+          ),
+        );
+        return;
+      }
+
       await HomeWidget.requestPinWidget(
         qualifiedAndroidName: androidWidgetName,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Confirme a adição do widget na tela inicial.'),
+        ),
       );
     } on PlatformException catch (exception) {
       if (!context.mounted) return;
@@ -33,6 +53,13 @@ class MainApp extends StatelessWidget {
           content: Text(
             'Não foi possível criar o widget: ${exception.message ?? exception.code}',
           ),
+        ),
+      );
+    } on Exception catch (exception) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Não foi possível preparar o widget: $exception'),
         ),
       );
     }
